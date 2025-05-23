@@ -120,6 +120,50 @@ if st.checkbox("📌 Đánh giá bằng AI", key="ai1"):
     st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
     st.markdown(generate_analysis(f"Dữ liệu điểm trung bình các trường: {avg_by_school.to_dict()}"))
 
+# ======= PHẦN 7: Thống kê số lượng thí sinh chọn môn tổ hợp (trừ Toán, Văn) =======
+st.subheader("📈 Thống kê số lượng thí sinh lựa chọn các môn tổ hợp")
+
+# Loại bỏ các môn bắt buộc
+excluded_subjects = ["Toán", "Văn"]
+optional_subjects = [col for col in score_columns if col not in excluded_subjects and col in df.columns]
+
+# Đếm số thí sinh có điểm
+subject_counts = {subject: df_filtered[subject].notna().sum() for subject in optional_subjects}
+
+if not subject_counts:
+    st.warning("❗ Không có dữ liệu môn tự chọn nào để thống kê.")
+else:
+    # Dữ liệu cho biểu đồ
+    labels = list(subject_counts.keys())
+    sizes = list(subject_counts.values())
+    colors = plt.get_cmap("tab20")(range(len(labels)))
+
+    # Tạo biểu đồ tròn rõ nét
+    fig7, ax7 = plt.subplots(figsize=(6, 3), dpi=200)
+    wedges, texts, autotexts = ax7.pie(
+        sizes,
+        labels=labels,
+        autopct='%1.1f%%',
+        startangle=140,
+        colors=colors,
+        textprops=dict(color="black", fontsize=6)
+    )
+
+    ax7.axis('equal')
+    ax7.set_title("Tỷ lệ lựa chọn các môn tổ hợp", fontsize=8)
+
+    # Canh lề đẹp
+    plt.tight_layout()
+    st.pyplot(fig7)
+
+    # Đánh giá AI
+    if st.checkbox("📌 Đánh giá bằng AI", key="ai7"):
+        st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
+        st.markdown(generate_analysis(
+            f"Số lượng thí sinh chọn thi từng môn tổ hợp (trừ Toán, Văn): {subject_counts}"
+        ))
+
+
 
 
 # ======= PHẦN 2: Biểu đồ điểm trung bình theo Môn =======
