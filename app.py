@@ -87,7 +87,7 @@ ranked_labels = []
 rank = 1
 for name in avg_by_school.index:
     if name == "Điểm TB toàn bộ":
-        ranked_labels.append("⭐ Trung bình")
+        ranked_labels.append("Trung bình")
     else:
         ranked_labels.append(f"{rank}. {name}")
         rank += 1
@@ -105,8 +105,16 @@ ax1.set_ylabel("Điểm trung bình")
 ax1.set_title("Biểu đồ điểm trung bình theo Trường")
 ax1.set_ylim(0, 10)
 plt.xticks(rotation=45, ha='right')
+
+# 👉 Tô màu chữ "Trung bình" trên trục X thành màu cam
+xtick_labels = ax1.get_xticklabels()
+for label in xtick_labels:
+    if label.get_text() == "Trung bình":
+        label.set_color("orange")
+
 plt.tight_layout()
 st.pyplot(fig1)
+
 
 # ======= PHẦN 2: Biểu đồ điểm trung bình theo Môn =======
 st.subheader("📊 Biểu đồ điểm trung bình theo Môn")
@@ -125,7 +133,7 @@ if selected_subject:
     rank_sub = 1
     for name in subject_avg_by_school.index:
         if name == "TB toàn bộ":
-            ranked_labels_sub.append("⭐ TB toàn bộ")
+            ranked_labels_sub.append("Trung bình")
         else:
             ranked_labels_sub.append(f"{rank_sub}. {name}")
             rank_sub += 1
@@ -142,12 +150,20 @@ if selected_subject:
     ax2.set_title(f"Biểu đồ điểm trung bình môn {selected_subject} theo Trường")
     ax2.set_ylim(0, 10)
     plt.xticks(rotation=45, ha='right')
+
+    # 👉 Tô màu chữ "Trung bình" trên trục X thành cam
+    xtick_labels_sub = ax2.get_xticklabels()
+    for label in xtick_labels_sub:
+        if label.get_text() == "Trung bình":
+            label.set_color("orange")
+
     plt.tight_layout()
     st.pyplot(fig2)
 
     if st.checkbox("📌 Đánh giá bằng AI", key="ai2"):
         st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
         st.markdown(generate_analysis(f"Dữ liệu điểm trung bình môn {selected_subject} theo từng trường: {subject_avg_by_school.to_dict()}"))
+
 
 
 # ======= PHẦN 3: Phổ điểm môn =======
