@@ -76,29 +76,37 @@ df_filtered = df if selected_school == "Toàn tỉnh" else df[df['Trường'] ==
 
 # Biểu đồ phần 1 – Trung bình theo trường
 st.subheader("🏫 Biểu đồ điểm trung bình theo Trường")
+
 avg_by_school = df_filtered.groupby("Trường")['Điểm TB'].mean()
 avg_all = df_filtered['Điểm TB'].mean()
 avg_by_school["Điểm TB toàn bộ"] = avg_all
 avg_by_school = avg_by_school.sort_values(ascending=False)
 
-ranked_labels = [f"{i+1}. {name}" if name != "Điểm TB toàn bộ" else "⭐ Trung bình toàn bộ" for i, name in enumerate(avg_by_school.index)]
+# Đánh số thứ tự, bỏ qua dòng "Điểm TB toàn bộ"
+ranked_labels = []
+rank = 1
+for name in avg_by_school.index:
+    if name == "Điểm TB toàn bộ":
+        ranked_labels.append("⭐ Trung bình")
+    else:
+        ranked_labels.append(f"{rank}. {name}")
+        rank += 1
+
 colors = ['orange' if name == "Điểm TB toàn bộ" else 'skyblue' for name in avg_by_school.index]
 
 fig1, ax1 = plt.subplots(figsize=(12, 6))
 bars = ax1.bar(ranked_labels, avg_by_school.values, color=colors)
+
 for bar in bars:
     height = bar.get_height()
     ax1.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}", ha='center', va='bottom', fontsize=9, rotation=90)
+
 ax1.set_ylabel("Điểm trung bình")
 ax1.set_title("Biểu đồ điểm trung bình theo Trường")
 ax1.set_ylim(0, 10)
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
 st.pyplot(fig1)
-
-if st.checkbox("📌 Đánh giá bằng AI", key="ai1"):
-    st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
-    st.markdown(generate_analysis(f"Dữ liệu điểm trung bình các trường: {avg_by_school.to_dict()}"))
 
 # ======= PHẦN 2: Biểu đồ điểm trung bình theo Môn =======
 st.subheader("📊 Biểu đồ điểm trung bình theo Môn")
@@ -112,7 +120,16 @@ if selected_subject:
     subject_avg_by_school["TB toàn bộ"] = overall_subject_avg
     subject_avg_by_school = subject_avg_by_school.sort_values(ascending=False)
 
-    ranked_labels_sub = [f"{i+1}. {name}" if name != "TB toàn bộ" else "⭐ TB toàn bộ" for i, name in enumerate(subject_avg_by_school.index)]
+    # Đánh số thứ tự, bỏ qua dòng "TB toàn bộ"
+    ranked_labels_sub = []
+    rank_sub = 1
+    for name in subject_avg_by_school.index:
+        if name == "TB toàn bộ":
+            ranked_labels_sub.append("⭐ TB toàn bộ")
+        else:
+            ranked_labels_sub.append(f"{rank_sub}. {name}")
+            rank_sub += 1
+
     colors = ['orange' if idx == "TB toàn bộ" else 'lightgreen' for idx in subject_avg_by_school.index]
 
     fig2, ax2 = plt.subplots(figsize=(12, 6))
@@ -120,6 +137,7 @@ if selected_subject:
     for bar in bars2:
         height = bar.get_height()
         ax2.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}", ha='center', va='bottom', fontsize=9, rotation=90)
+
     ax2.set_ylabel(f"Điểm TB môn {selected_subject}")
     ax2.set_title(f"Biểu đồ điểm trung bình môn {selected_subject} theo Trường")
     ax2.set_ylim(0, 10)
@@ -130,6 +148,7 @@ if selected_subject:
     if st.checkbox("📌 Đánh giá bằng AI", key="ai2"):
         st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
         st.markdown(generate_analysis(f"Dữ liệu điểm trung bình môn {selected_subject} theo từng trường: {subject_avg_by_school.to_dict()}"))
+
 
 # ======= PHẦN 3: Phổ điểm môn =======
 st.subheader("📉 Phổ điểm từng môn (Histogram)")
