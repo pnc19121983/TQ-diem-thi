@@ -106,7 +106,7 @@ ax1.set_title("Biểu đồ điểm trung bình theo Trường")
 ax1.set_ylim(0, 10)
 plt.xticks(rotation=45, ha='right')
 
-# 👉 Tô màu chữ "Trung bình" trên trục X thành màu cam
+# 👉 Tô màu chữ "Trung bình" thành cam
 xtick_labels = ax1.get_xticklabels()
 for label in xtick_labels:
     if label.get_text() == "Trung bình":
@@ -114,6 +114,12 @@ for label in xtick_labels:
 
 plt.tight_layout()
 st.pyplot(fig1)
+
+# ✅ MỤC ĐÁNH GIÁ BẰNG AI
+if st.checkbox("📌 Đánh giá bằng AI", key="ai1"):
+    st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
+    st.markdown(generate_analysis(f"Dữ liệu điểm trung bình các trường: {avg_by_school.to_dict()}"))
+
 
 
 # ======= PHẦN 2: Biểu đồ điểm trung bình theo Môn =======
@@ -167,7 +173,7 @@ if selected_subject:
 
 
 # ======= PHẦN 3: Phổ điểm môn =======
-st.subheader("📉 Phổ điểm từng môn (Histogram)")
+st.subheader("📉 Phổ điểm từng môn")
 selected_subject_hist = st.selectbox("🧪 Chọn môn để xem phổ điểm:", options=available_subjects, key="hist")
 bins = st.slider("🎯 Số cột trong phổ điểm (bins):", min_value=5, max_value=30, value=30)
 
