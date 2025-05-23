@@ -245,9 +245,12 @@ if selected_school != "Toàn tỉnh":
         st.warning("❗ Dữ liệu chưa có cột 'Lớp'. Vui lòng kiểm tra lại file.")
     else:
         class_avg = df_filtered.groupby("Lớp")['Điểm TB'].mean().sort_values(ascending=False)
+        overall_avg = df['Điểm TB'].mean()
 
         fig5, ax5 = plt.subplots(figsize=(12, 6))
         bars_class = ax5.bar(class_avg.index, class_avg.values, color='lightcoral')
+
+        ax5.axhline(overall_avg, color='orange', linestyle='--', label=f"Trung bình toàn tỉnh: {overall_avg:.2f}")
 
         for bar in bars_class:
             height = bar.get_height()
@@ -256,15 +259,20 @@ if selected_school != "Toàn tỉnh":
         ax5.set_title(f"Biểu đồ điểm trung bình các lớp trong trường {selected_school}")
         ax5.set_ylabel("Điểm trung bình")
         ax5.set_ylim(0, 10)
+        ax5.legend()
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         st.pyplot(fig5)
 
         if st.checkbox("📌 Đánh giá bằng AI", key="ai5"):
             st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
-            st.markdown(generate_analysis(f"Điểm trung bình từng lớp trong trường {selected_school}: {class_avg.to_dict()}"))
+            st.markdown(generate_analysis(
+                f"Điểm trung bình các lớp trong trường {selected_school}: {class_avg.to_dict()}\n"
+                f"Trung bình toàn tỉnh: {overall_avg}"
+            ))
 else:
     st.info("📌 Vui lòng chọn một trường cụ thể để xem thống kê theo lớp.")
+
 
 # ======= PHẦN 6: So sánh điểm trung bình từng môn học giữa các lớp =======
 if selected_school != "Toàn tỉnh":
@@ -274,66 +282,32 @@ if selected_school != "Toàn tỉnh":
         st.warning("❗ Dữ liệu chưa có cột 'Lớp'. Vui lòng kiểm tra lại file.")
     else:
         class_subject_means = df_filtered.groupby("Lớp")[score_columns].mean()
-        subject_option = st.radio("🎯 Chế độ hiển thị:", ["Tất cả các môn", "Chọn từng môn"], horizontal=True, key="view_mode")
+        selected_sub6 = st.selectbox("🧪 Chọn môn học:", options=score_columns, key="sub6")
+        data_sub = class_subject_means[selected_sub6]
+        avg_all_sub = subject_means_all[selected_sub6]
 
-        if subject_option == "Tất cả các môn":
-            fig6_all, ax6_all = plt.subplots(figsize=(12, 6))
-            x = range(len(score_columns))
-            bar_width = 0.1
+        fig6_sub, ax6_sub = plt.subplots(figsize=(12, 6))
+        bars_sub = ax6_sub.bar(data_sub.index, data_sub.values, color='skyblue')
+        ax6_sub.axhline(avg_all_sub, color='orange', linestyle='--', label=f"Trung bình toàn tỉnh: {avg_all_sub:.2f}")
 
-            for i, (class_name, values) in enumerate(class_subject_means.iterrows()):
-                offset = (i - len(class_subject_means)/2) * bar_width
-                ax6_all.bar([xi + offset for xi in x], values.values, width=bar_width, label=f"Lớp {class_name}")
+        for bar in bars_sub:
+            height = bar.get_height()
+            ax6_sub.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}", ha='center', va='bottom', fontsize=9, rotation=90)
 
-            # Cột toàn tỉnh
-            ax6_all.bar([xi + bar_width * len(class_subject_means)/2 for xi in x],
-                        subject_means_all.values,
-                        width=bar_width,
-                        label="Toàn tỉnh",
-                        color="orange")
+        ax6_sub.set_title(f"Điểm trung bình môn {selected_sub6} theo lớp - Trường {selected_school}")
+        ax6_sub.set_ylabel("Điểm trung bình")
+        ax6_sub.set_ylim(0, 10)
+        ax6_sub.legend()
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        st.pyplot(fig6_sub)
 
-            ax6_all.set_xticks(list(x))
-            ax6_all.set_xticklabels(score_columns, rotation=0)
-            ax6_all.set_title(f"So sánh điểm trung bình từng môn giữa các lớp trong trường {selected_school}")
-            ax6_all.set_ylabel("Điểm trung bình")
-            ax6_all.set_ylim(0, 10)
-            ax6_all.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-            plt.tight_layout()
-            st.pyplot(fig6_all)
-
-            if st.checkbox("📌 Đánh giá bằng AI", key="ai6_all"):
-                st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
-                st.markdown(generate_analysis(
-                    f"Điểm trung bình từng môn học của các lớp trong trường {selected_school}:\n{class_subject_means.to_dict()}\n"
-                    f"Điểm trung bình toàn tỉnh: {subject_means_all.to_dict()}"
-                ))
-
-        else:  # Chọn từng môn
-            selected_sub6 = st.selectbox("🧪 Chọn môn học:", options=score_columns, key="sub6")
-            data_sub = class_subject_means[selected_sub6]
-            avg_all_sub = subject_means_all[selected_sub6]
-
-            fig6_sub, ax6_sub = plt.subplots(figsize=(12, 6))
-            bars_sub = ax6_sub.bar(data_sub.index, data_sub.values, color='skyblue')
-            ax6_sub.axhline(avg_all_sub, color='orange', linestyle='--', label=f"Trung bình toàn tỉnh: {avg_all_sub:.2f}")
-
-            for bar in bars_sub:
-                height = bar.get_height()
-                ax6_sub.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}", ha='center', va='bottom', fontsize=9, rotation=90)
-
-            ax6_sub.set_title(f"Điểm trung bình môn {selected_sub6} theo lớp - Trường {selected_school}")
-            ax6_sub.set_ylabel("Điểm trung bình")
-            ax6_sub.set_ylim(0, 10)
-            ax6_sub.legend()
-            plt.xticks(rotation=45, ha='right')
-            plt.tight_layout()
-            st.pyplot(fig6_sub)
-
-            if st.checkbox("📌 Đánh giá bằng AI", key="ai6_sub"):
-                st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
-                st.markdown(generate_analysis(
-                    f"Điểm trung bình môn {selected_sub6} theo lớp trong trường {selected_school}: {data_sub.to_dict()}\n"
-                    f"Trung bình toàn tỉnh môn {selected_sub6}: {avg_all_sub}"
-                ))
+        if st.checkbox("📌 Đánh giá bằng AI", key="ai6_sub"):
+            st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
+            st.markdown(generate_analysis(
+                f"Điểm trung bình môn {selected_sub6} theo lớp trong trường {selected_school}: {data_sub.to_dict()}\n"
+                f"Trung bình toàn tỉnh môn {selected_sub6}: {avg_all_sub}"
+            ))
 else:
     st.info("📌 Vui lòng chọn một trường cụ thể để xem thống kê theo lớp.")
+
