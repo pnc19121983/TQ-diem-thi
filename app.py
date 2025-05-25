@@ -16,9 +16,9 @@ def generate_analysis(prompt_text):
             model = genai.GenerativeModel("gemini-1.5-flash")
             default_instruction = (
                 "Hãy phân tích dữ liệu dưới đây theo cấu trúc:\n"
-                "- Đơn vị nào có kết quả tốt, đơn vị nào có kết quả yếu kém?\n"
-                "- nguyên nhân của chất lượng yếu kém là gì?\n"
-                "- Đề xuất hướng khắc phục cho các yếu kém đó.\n\n"
+                "- Căn cứ vào điểm trung bình, phương sai, độ lệch chuẩn, số trung vị, mốt, khoảng biến thiên, khoản tứ phân vị đưa ra nhận xét đánh giá\n"
+                "- Nguyên nhân của Chưa đạt là gì?\n"
+                "- Đề xuất hướng khắc phục cho các đối tượng Chưa đạt đó.\n\n"
             )
             full_prompt = default_instruction + str(prompt_text)
             response = model.generate_content(full_prompt)
@@ -127,8 +127,12 @@ st.subheader("📈 Thống kê số lượng thí sinh lựa chọn các môn t�
 excluded_subjects = ["Toán", "Văn"]
 optional_subjects = [col for col in score_columns if col not in excluded_subjects and col in df.columns]
 
-# Đếm số thí sinh có điểm
-subject_counts = {subject: df_filtered[subject].notna().sum() for subject in optional_subjects}
+# Đếm số thí sinh có điểm, chỉ giữ môn có ít nhất 1 thí sinh chọn
+subject_counts = {
+    subject: df_filtered[subject].notna().sum()
+    for subject in optional_subjects
+    if df_filtered[subject].notna().sum() > 0
+}
 
 if not subject_counts:
     st.warning("❗ Không có dữ liệu môn tự chọn nào để thống kê.")
@@ -162,6 +166,7 @@ else:
         st.markdown(generate_analysis(
             f"Số lượng thí sinh chọn thi từng môn tổ hợp (trừ Toán, Văn): {subject_counts}"
         ))
+
 
 
 
@@ -277,9 +282,6 @@ if st.checkbox("📌 Đánh giá bằng AI", key="ai4"):
     st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
     st.markdown(generate_analysis(f"So sánh điểm trung bình các môn thi giữa trường '{selected_school}' và toàn tỉnh.\nTrường: {subject_means_filtered.to_dict()}\nToàn tỉnh: {subject_means_all.to_dict()}"))
 
-# ====== CHÂN TRANG ======
-st.markdown("---")
-st.markdown("©️ **Bản quyền thuộc về iTeX-Teams**", unsafe_allow_html=True)
 
 # ======= PHẦN 5: Điểm trung bình của từng lớp trong một trường =======
 if selected_school != "Toàn tỉnh":
@@ -355,3 +357,6 @@ if selected_school != "Toàn tỉnh":
 else:
     st.info("📌 Vui lòng chọn một trường cụ thể để xem thống kê theo lớp.")
 
+# ====== CHÂN TRANG ======
+st.markdown("---")
+st.markdown("©️ **Bản quyền thuộc về iTeX-Teams**", unsafe_allow_html=True)
