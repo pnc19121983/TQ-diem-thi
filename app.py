@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import socket
 import google.generativeai as genai
+import os
+import plotly.graph_objects as go
 
 # Cấu hình API key trực tiếp từ Google AI Studio
 genai.configure(api_key="AIzaSyAWXS7wjLXSUQVWa8e9k2MD1hjrL6rEkYU")
@@ -356,6 +358,123 @@ if selected_school != "Toàn tỉnh":
             ))
 else:
     st.info("📌 Vui lòng chọn một trường cụ thể để xem thống kê theo lớp.")
+
+# ======= PHẦN 8: So sánh điểm trung bình giữa các Trường qua các lần thi =======
+st.subheader("📊 So sánh điểm trung bình giữa các Trường qua các Lần thi")
+
+# Danh sách các file và nhãn tương ứng
+labels = ["Lần 1", "Lần 2", "Lần 3"]
+file_names = ["du_lieu_mau.xlsx", "du_lieu_mau_1.xlsx", "du_lieu_mau_2.xlsx"]
+data_versions = []
+
+# Đọc từng file nếu tồn tại
+for file, label in zip(file_names, labels):
+    if not os.path.exists(file):
+        st.warning(f"⚠️ Không tìm thấy file: `{file}`")
+        continue
+
+    try:
+        df_temp = pd.read_excel(file)
+        df_temp.columns = df_temp.columns.str.strip()
+
+        if "Trường" not in df_temp.columns:
+            st.error(f"❌ File `{file}` thiếu cột 'Trường'")
+            continue
+
+        for col in score_columns:
+            if col in df_temp.columns:
+                df_temp[col] = pd.to_numeric(df_temp[col], errors='coerce')
+
+        df_temp['Điểm TB'] = df_temp[score_columns].mean(axis=1, skipna=True)
+        df_temp["Lần thi"] = label
+        data_versions.append(df_temp)
+
+    except Exception as e:
+        st.error(f"❌ Lỗi khi đọc file `{file}`: {e}")
+
+if len(data_versions) < 2:
+    st.info("📌 Cần ít nhất 2 file dữ liệu hợp lệ để so sánh.")
+    st.stop()
+
+# Gộp dữ liệu
+df_all_cmp = pd.concat(data_versions, ignore_index=True)
+
+# Trung bình theo Trường và Lần thi
+avg_by_school_exam = df_all_cmp.groupby(["Trường", "Lần thi"])["Điểm TB"].mean().unstack()
+
+# Biểu đồ Plotly – Tổng hợp điểm TB theo Trường và Lần thi
+fig_cmp_grouped = go.Figure()
+x_labels = avg_by_school_exam.index.tolist()
+
+for i, exam_label in enumerate(avg_by_school_exam.columns):
+    fig_cmp_grouped.add_trace(go.Bar(
+        name=exam_label,
+        x=x_labels,
+        y=avg_by_school_exam[exam_label],
+        hovertemplate="Trường: %{x}<br>Lần thi: " + exam_label + "<br>Điểm TB: %{y:.2f}<extra></extra>"
+    ))
+
+fig_cmp_grouped.update_layout(
+    barmode='group',
+    title="So sánh điểm trung bình giữa các Trường qua các Lần thi",
+    xaxis_title="Trường",
+    yaxis_title="Điểm trung bình",
+    yaxis=dict(range=[0, 10]),
+    xaxis_tickangle=45,
+    hovermode="x unified"
+)
+st.plotly_chart(fig_cmp_grouped, use_container_width=True)
+
+# Đánh giá bằng AI
+if st.checkbox("📌 Đánh giá bằng AI", key="ai_cmp_all_schools"):
+    st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
+    st.markdown(generate_analysis(
+        f"Điểm trung bình các Trường qua các Lần thi:\n{avg_by_school_exam.to_dict(orient='index')}"
+    ))
+
+# ======= MỞ RỘNG: So sánh môn học giữa các Trường qua các Lần thi =======
+st.markdown("### 📘 So sánh điểm trung bình từng môn giữa các Trường qua các Lần thi")
+
+selected_subject_across = st.selectbox(
+    "🎯 Chọn môn học để so sánh:",
+    options=[col for col in score_columns if col in df_all_cmp.columns],
+    key="cmp_subject_across"
+)
+
+# Trung bình theo Trường, Lần thi cho môn chọn
+subject_avg_across = df_all_cmp.groupby(["Trường", "Lần thi"])[selected_subject_across].mean().unstack()
+
+# Biểu đồ Plotly – môn học cụ thể
+fig_sub_cmp = go.Figure()
+x_labels = subject_avg_across.index.tolist()
+
+for i, exam_label in enumerate(subject_avg_across.columns):
+    fig_sub_cmp.add_trace(go.Bar(
+        name=exam_label,
+        x=x_labels,
+        y=subject_avg_across[exam_label],
+        hovertemplate=f"Trường: %{{x}}<br>Lần thi: {exam_label}<br>Điểm TB {selected_subject_across}: %{{y:.2f}}<extra></extra>"
+    ))
+
+fig_sub_cmp.update_layout(
+    barmode='group',
+    title=f"So sánh điểm trung bình môn {selected_subject_across} giữa các Trường qua các Lần thi",
+    xaxis_title="Trường",
+    yaxis_title=f"Điểm TB môn {selected_subject_across}",
+    yaxis=dict(range=[0, 10]),
+    xaxis_tickangle=45,
+    hovermode="x unified"
+)
+st.plotly_chart(fig_sub_cmp, use_container_width=True)
+
+# Đánh giá bằng AI
+if st.checkbox("📌 Đánh giá bằng AI", key="ai_cmp_subject_across"):
+    st.markdown("### 🧠 Nhận định & đề xuất từ AI:")
+    st.markdown(generate_analysis(
+        f"Điểm trung bình môn {selected_subject_across} của các Trường qua các Lần thi:\n{subject_avg_across.to_dict(orient='index')}"
+    ))
+
+
 
 # ====== CHÂN TRANG ======
 st.markdown("---")
